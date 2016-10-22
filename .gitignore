@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+source_data/
+data.zip
+US_zips.geojson

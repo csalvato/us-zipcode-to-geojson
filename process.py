@@ -24,6 +24,19 @@ class GeonamesEntry(object):
     def __repr__(self):
         return self.postal_code
 
+class RecordsCollection(object):
+    def __init__(self):
+        self.records = []
+
+    def add_to_collection(self, record):
+        self.records.append(record.to_geojson())
+
+    def get_geojson_collection(self):
+        return {
+            'type': 'FeatureCollection',
+            'features': reduce(lambda x,y: x+y,self.records)
+        }
+
 class ZipCodeRecord(object):
 
     def __init__(self):
@@ -39,9 +52,7 @@ class ZipCodeRecord(object):
         return self.postal_code
 
     def to_geojson(self):
-        return {
-            'type': 'FeatureCollection',
-            'features': [
+        return [
                 {
                     'type': 'Feature',
                     'geometry': {
@@ -51,7 +62,9 @@ class ZipCodeRecord(object):
                             self.latitude
                         ]
                     },
-                    'properties': {}
+                    'properties': {
+                        'postal-code': self.postal_code
+                    }
                 },
                 {
                     'type': 'Feature',
@@ -64,7 +77,6 @@ class ZipCodeRecord(object):
                     }
                 }
             ]
-        }
 
 if __name__ == '__main__':
 
@@ -113,15 +125,12 @@ if __name__ == '__main__':
 
         parsed_zcrecords.append(zcrecord)
 
+    records = RecordsCollection()
     # Write the entries out to disk
     for index, parsed_zcrecord in enumerate(parsed_zcrecords):
+        print "Adding %s to collection" % parsed_zcrecord.postal_code
+        records.add_to_collection(parsed_zcrecord)
 
-        # See if the output data directory has a subdirectory for this state
-        if not os.path.exists('data/%s' % parsed_zcrecord.state):
-            os.mkdir('data/%s' % parsed_zcrecord.state)
-
-        filename = 'data/%s/%s.geojson' % (parsed_zcrecord.state, parsed_zcrecord.postal_code)
-        print 'Writing file %d of %d: %s' % (index, len(parsed_zcrecords), filename)
-
-        with open(filename, 'w') as f:
-            f.write(json.dumps(parsed_zcrecord.to_geojson(), indent=4))
+    filename='US_zips.geojson'
+    with open(filename, 'w') as f:
+        f.write(json.dumps(records.get_geojson_collection(), indent=4))
